@@ -66,7 +66,7 @@ pub extern fn get_service_named(target: *mut MulticastDiscovery) -> InstanceDesc
 }
 
 #[no_mangle]
-pub extern fn get_service_with_tags(target: *mut MulticastDiscovery) -> *mut InstanceDescriptor {
+pub extern fn get_service_with_tags(target: *mut MulticastDiscovery) -> InstanceDescriptor {
   let instances = unsafe {
     (*target).get_known_services();
   };
@@ -74,10 +74,10 @@ pub extern fn get_service_with_tags(target: *mut MulticastDiscovery) -> *mut Ins
   //TODO, find the right one
 
   unsafe {
-    Box::into_raw(Box::new(
+//    Box::into_raw(Box::new(
       InstanceDescriptor {
-        id: CString::new("hello").unwrap().as_ptr(),
-        identifier: CString::new("hello").unwrap().as_ptr(),
+        id: to_ptr("hello".to_string()),
+        identifier: to_ptr("MY IDENT IS COOL".to_string()),
         tags: vec![].as_ptr(),
         codecs: vec![].as_ptr(),
         connection_urls: vec![].as_ptr(),
@@ -85,7 +85,7 @@ pub extern fn get_service_with_tags(target: *mut MulticastDiscovery) -> *mut Ins
         codecs_length: 0,
         connection_urls_length: 0
       }
-    ))
+//    ))
   }
 }
 
@@ -97,65 +97,38 @@ pub extern fn destroy_descriptor(descriptor: *mut InstanceDescriptor) {
 }
 
 #[no_mangle]
-pub extern fn advertise_local_service(target: *mut MulticastDiscovery, descriptor: InstanceDescriptor) {
-  println!("Advertising? {}", descriptor.codecs_length);
+pub extern fn advertise_local_service_full(target: *mut MulticastDiscovery,
+id: *const c_char,
+identifier: *const c_char,
+tags: *const *const c_char,
+//codecs: *const *const c_char,
+//connection_urls: *const *const c_char,
+tags_length: size_t,
+//codecs_length: size_t,
+//connection_urls_length: size_t
+) {
 
   unsafe {
+    println!("WOOT? {}", from_cstr(id));
+    println!("WOOT? {}", from_cstr(identifier));
+    println!("WOOT? {}", tags_length);
+  }
+}
+
+
+
+#[no_mangle]
+pub extern fn advertise_local_service(target: *mut MulticastDiscovery, descriptor: InstanceDescriptor) {
+  unsafe {
     (*target).advertise_local_service(discovery::InstanceDescriptor {
-      id: CStr::from_ptr(descriptor.id).to_str().unwrap().to_string(),
-      identifier: CStr::from_ptr(descriptor.identifier).to_str().unwrap().to_string(),
+      id: from_cstr(descriptor.id),
+      identifier: from_cstr(descriptor.identifier),
       tags: array_to_vec(descriptor.tags, descriptor.tags_length),
       codecs: array_to_vec(descriptor.codecs, descriptor.codecs_length),
       connection_urls: array_to_vec(descriptor.connection_urls, descriptor.connection_urls_length),
     });
   }
 }
-
-fn array_to_vec<'a>(vals: *const *const c_char, len: size_t) -> Vec<String>
-{
-  let arr = unsafe {
-    std::slice::from_raw_parts(vals, len as usize)
-      .iter().map(|tag| {
-      let val = CStr::from_ptr((*tag)).to_str();
-      return val.unwrap();
-    })
-  };
-
-  let mut vector = Vec::new();
-  for i in arr {
-    println!("{}", i);
-    vector.push(i.to_string());
-  }
-  vector
-}
-
-//#[no_mangle]
-//pub extern fn advertise_local_service_old(target: *mut MulticastDiscovery,
-//                                          name: *const c_char,
-//                                          tags: *const *const c_char, length: size_t) {
-//  println!("Advertising? {}", length);
-//
-//  let tagslice = unsafe {
-//    std::slice::from_raw_parts(tags as *const *const c_char, length as usize)
-//      .iter().map(|tag| CStr::from_ptr((*tag)).to_str().unwrap())
-//  };
-//
-//  for x in tagslice {
-//    println!("{}", x);
-//  }
-//
-//  println!("Got 0, {:?}", tags);
-//
-//  unsafe {
-//    (*target).advertise_local_service(discovery::InstanceDescriptor {
-//      id: "AWESOME1234".to_string(),
-//      identifier: "AWESOME1234".to_string(),
-//      tags: vec![],
-//      codecs: vec![],
-//      connection_urls: vec![],
-//    });
-//  }
-//}
 
 #[no_mangle]
 pub extern fn on_ready(target: *mut MulticastDiscovery, call: OnReady) {
@@ -183,6 +156,25 @@ pub extern fn shutdown(target: *mut MulticastDiscovery) {
   }
 }
 
+///  Internal reworking
+
+fn array_to_vec<'a>(vals: *const *const c_char, len: size_t) -> Vec<String>
+{
+  let arr = unsafe {
+    std::slice::from_raw_parts(vals, len as usize)
+      .iter().map(|tag| {
+      let val = CStr::from_ptr((*tag)).to_str();
+      return val.unwrap();
+    })
+  };
+
+  let mut vector = Vec::new();
+  for i in arr {
+    println!("{}", i);
+    vector.push(i.to_string());
+  }
+  vector
+}
 
 fn to_ptr(string: String) -> *const c_char {
   let cs = CString::new(string.as_bytes()).unwrap();
@@ -191,4 +183,8 @@ fn to_ptr(string: String) -> *const c_char {
   // Otherwise, we'll get a segfault.
   mem::forget(cs);
   ptr
+}
+
+fn from_cstr(str: *const c_char ) -> String {
+  unsafe { CStr::from_ptr(str) }.to_str().unwrap().to_string().to_owned()
 }

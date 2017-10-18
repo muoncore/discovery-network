@@ -1,3 +1,5 @@
 # UDP discovery plugin
 
-Adds udp based discovery mechanisms. 
+Adds udp based multicast discovery mechanism.  Written in Rust, for embedding in other Muons and eventually in the hoped for Muon Rust
+
+Roughly works, alpha.

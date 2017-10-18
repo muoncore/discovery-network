@@ -130,7 +130,6 @@ public class NativeDiscovery implements Discovery {
         System.out.println("ID = " + disco.id);
         System.out.println("SVC = " + disco.identifier);
         ServiceDescriptor external = makeFrom(disco);
-////        discoLib.destroy_descriptor(disco);
         return Optional.of(external);
     }
 
@@ -200,5 +199,6 @@ public class NativeDiscovery implements Discovery {
     @Override
     public void shutdown() {
         discoLib.shutdown(instance);
+        instance = null;
     }
 }

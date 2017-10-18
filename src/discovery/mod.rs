@@ -194,6 +194,14 @@ mod test {
   fn on_advertise_will_appear_in_remote() {
     let mut disco = run();
 
+
+    let me = if x {
+      "HELLO"
+    } else {
+      "WORLD"
+    }
+
+
     let me = InstanceDescriptor {
       id: "my-id".to_string(),
       identifier: "my-identinf".to_string(),
